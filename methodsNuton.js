@@ -99,8 +99,11 @@ const funt=new Function("x1^2-x2^2-2*x1^2*x2^2+10",1,1,0.5,2);
 let f=AlgoritmNewton.gradient(funt.getFuncion);
 console.log("gradient:\n "+f[0]+"\n"+f[1]);
 let gradInPoint=AlgoritmNewton.gradientInPoint(f, funt.X1, funt.X2);
+let matrixGesse=AlgoritmNewton.gesse(f);
+console.log("common matrix gesse\n "+ matrixGesse[0]+"|  "+matrixGesse[1]+"\n"+
+  matrixGesse[2]+" |  "+matrixGesse[3]);
 console.log("gradietn in ("+funt.X1+","+funt.X2+") = "+gradInPoint);
-let chek=lgoritmNewton.checkWithElopson(gradInPoint, funt.elipson);
+let check=AlgoritmNewton.checkWithElopson(gradInPoint, funt.elipson);
 console.log("step 4 check whith elopson: "+check);
 if(!check){
   //step 5
