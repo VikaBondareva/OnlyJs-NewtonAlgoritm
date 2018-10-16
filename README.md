@@ -1,0 +1,1 @@
+# OnlyJs-NewtonAlgoritm
