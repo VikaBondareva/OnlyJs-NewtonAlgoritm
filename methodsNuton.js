@@ -1,7 +1,7 @@
 //import * as math from 'mathjs'
 
-let gradient = [];
-let derivativies = [];
+//let gradient = [];
+//let derivativies = [];
 const xOne = 'x1';
 const xTwo = 'x2';
 
@@ -68,14 +68,14 @@ class Matrix {
                     for (var n = 0; n < i; n++) B[m - 1][n] = array[m][n];
                     for (var n = i + 1; n < N; n++) B[m - 1][n - 1] = array[m][n];
                 }
-                adjA[i][j] = sign * Determinant(B);
+                adjA[i][j] = sign * this.Determinant(B);
             }
         }
         return adjA;
     }
 
     static Determinant(array) // детерминант
-    {
+     {
         var N = array.length, B = [],
             denom = 1,
             exchanges = 0;
@@ -113,19 +113,21 @@ class Matrix {
     }
 
     static InverseMatrix(array) { // обратная матрица
-        {
-            var det = Determinant(array);
+        
+        	let inverse=array;
+          // var det = this.Determinant(inverse);
+             let det=math.det(inverse);
             if (det == 0) return false;
-            var N = array.length,
-                array = AdjugateMatrix(array);
+            var N = array.length;
+                inverse = this.AdjugateMatrix(inverse);
             for (var i = 0; i < N; i++) {
                 for (var j = 0; j < N; j++) {
-                    array[i][j] /= det;
+                    inverse[i][j] /= det;
                 }
             }
-            return array;
-        }
+            return inverse;
     }
+
 }
 
 class AlgoritmNewton {
@@ -153,19 +155,18 @@ class AlgoritmNewton {
     //матрица гессе
     static rawGesse(derivate) {
         let derivateTwo = [];
-        derivateTwo.push(this.Devitive(derivate[0], xOne));
-        derivateTwo.push(this.Devitive(derivate[1], xTwo));
-        derivateTwo.push(this.Devitive(derivate[1], xOne));
-        derivateTwo.push(this.Devitive(derivate[0], xTwo));
+        derivateTwo[0]=[this.Devitive(derivate[0], xOne),this.Devitive(derivate[0], xTwo)];
+        derivateTwo[1]=[this.Devitive(derivate[1], xOne),this.Devitive(derivate[1], xTwo)];
         return derivateTwo;
     }
 
     static gesse(derivate) {
         let derivateTwo = this.rawGesse(derivate);
-        derivateTwo[0] = math.eval(derivateTwo[0], kPoint);
-        derivateTwo[1] = math.eval(derivateTwo[1], kPoint);
-        derivateTwo[2] = math.eval(derivateTwo[2], kPoint);
-        derivateTwo[3] = math.eval(derivateTwo[3], kPoint);
+      //  kPoint={x1:point[0], x2: point[1]};
+        derivateTwo[0][0] = math.eval(derivateTwo[0][0], kPoint);
+        derivateTwo[0][1] = math.eval(derivateTwo[0][1], kPoint);
+        derivateTwo[1][0] = math.eval(derivateTwo[1][0], kPoint);
+        derivateTwo[1][1] = math.eval(derivateTwo[1][1], kPoint);
 
         return derivateTwo;
     }
@@ -188,36 +189,129 @@ class AlgoritmNewton {
     static checkWithElopson(gradInPoint, elipson) {
         return math.sqrt(math.pow(gradInPoint[0], 2) + math.pow(gradInPoint[1], 2)) < elipson;
     }
+
+    //step 9
+    static descentDirection(inverseGesse, derivate){
+    	return math.multiply(-1,math.multiply(inverseGesse,derivate));
+    }
+
+    static newPoint(pastPont, tk, dk){
+    	let d=math.multiply(tk,dk);
+    	let newX={x1:pastPont.x1+d[0], x2:pastPont.x2+d[1]};
+    	return newX;
+    }
+}
+
+
+
+function writeArray(str,array){
+ console.log(str+array[0][0]+" | "+ array[0][1]+"\n"+ array[1][0]+" | "+ array[1][1]);
+}
+
+function writeOneArray(str, arr){
+	 console.log(str+arr[0]+" | "+ arr[1]);
 }
 
 const funt = new Function("x1^2-x2^2-2*x1^2*x2^2+10", 1, 1, 0.5, 2);
 
-let kPoint = { x1: funt.GetX1, x2: funt.GetX2 };
+let kPoint= { x1: funt.GetX1, x2: funt.GetX2 };
 let globalPoint;
+let tk;
+let dk;
+let x=[];
 
-let f = AlgoritmNewton.gradient(funt.getFuncion);
-console.log("gradient:\n " + f[0] + "\n" + f[1]);
+//автоматический запуск алгоритма
+(function algoritm(funt){
 
-let gradInPoint = AlgoritmNewton.gradientInPoint(f, kPoint.x1, kPoint.x2);
-let matrixGesse = AlgoritmNewton.rawGesse(f);
-console.log("common matrix gesse\n " + matrixGesse[0] + "|  " + matrixGesse[1] + "\n" +
-    matrixGesse[2] + " |  " + matrixGesse[3]);
-console.log("gradietn in (" + kPoint.x1 + "," + kPoint.x2 + ") = " + gradInPoint);
-let check = AlgoritmNewton.checkWithElopson(gradInPoint, funt.elipson);
-console.log("step 4 check whith elopson: " + check);
-if (!check) {
-    for (var i = 0; i <= funt.m; i++) {
-        if (!(i == funt.m)) {
-            let gesse = AlgoritmNewton.gesse(f);
-            console.log("Matrix gesse for X1 = " + kPoint.x1 + ", X2 = " + kPoint.x2 + "\n" + gesse[0] + " | " + gesse[1] + "\n" +
-                gesse[2] + " | " + gesse[3]);
-        }
-        else {
-            break;
-        }
-    }
-}
-else {
-    globalPoint.X1 = kPoint.X1;
-    globalPoint.X2 = kPoint.X2;
-}
+	x=[funt.X1, funt.X2];
+	//kPoint={ x1: x[0], x2: x[1] };
+
+   //step1-2
+	let f = AlgoritmNewton.gradient(funt.getFuncion);
+	console.log("gradient:\n " + f[0] + "\n" + f[1]);
+    let matrixGesse = AlgoritmNewton.rawGesse(f);
+	writeArray("common matrix gesse\n ",matrixGesse);
+
+
+
+
+  //  function step3(f){
+    	let gradInPoint = AlgoritmNewton.gradientInPoint(f, kPoint.x1, kPoint.x2);
+		console.log("gradietn in (" + kPoint.x1 + "," + kPoint.x2 + ") = " + gradInPoint);
+
+    	let check = AlgoritmNewton.checkWithElopson(gradInPoint, funt.elipson);
+		console.log("step 4 check whith elopson: " + check);
+		if (!check) {
+			//step 6
+			 
+		   let gesse = AlgoritmNewton.gesse(f);
+		 console.log("Matrix gesse for X1 = " + kPoint.x1 + ", X2 = " + kPoint.x2+"\n");
+		 writeArray("",gesse);
+		    //step 7
+		    let inverseMatrixGesse=Matrix.InverseMatrix(gesse);
+		 writeArray("Matrix gesse inverse:\n ",inverseMatrixGesse);
+
+		    //step 8
+		    if(math.det(inverseMatrixGesse)>0)
+		    	{
+		    		//step 9
+		          console.log("step 9")
+		          let dk=AlgoritmNewton.descentDirection(inverseMatrixGesse,gradInPoint);
+				  tk=1;
+		    	}
+		    	else{
+		    		dk=math.multiply(-1,gradInPoint);
+		    	}
+		      //step 10
+		    	writeOneArray("Направление спуска\n",dk);
+		    	console.log('step 10')
+		    	//исправить, непавильно находит точку
+		    	kPoint=AlgoritmNewton.newPoint(kPoint,1,dk);
+				console.log("New point:"+kPoint.x1+" | "+ kPoint.x2 );
+
+				//step 11
+				
+		}
+		else {
+		    globalPoint.X1 = kPoint.X1;
+		    globalPoint.X2 = kPoint.X2;
+		}
+   // }
+
+  //  function step5(k,m,matrixGesse){
+ //   }
+
+ //  //  function step6(point){
+ //    	let gesse = AlgoritmNewton.gesse(f, point);
+	// 	 console.log("Matrix gesse for X1 = " + point[0] + ", X2 = " + point[1]+"\n");
+	// 	 writeArray("",gesse);
+	// //	 return gesse;
+
+ // //   }
+
+ // //   function step7(gesse){
+ //         let inverseMatrixGesse=Matrix.InverseMatrix(gesse);
+	// 	 writeArray("Matrix gesse inverse:\n ",inverseMatrixGesse);
+	// //	 return inverseMatrixGesse;
+ //  //  }
+
+
+ //   function step9(inverseGesse,gradInPoint){
+   //  	 let dk=AlgoritmNewton.descentDirection(inverseMatrixGesse,gradInPoint);
+   //  	 writeArray("Направление спуска\n",dk);
+		 // tk=1;
+	//	 tep10(tk,dk);
+  //  }
+
+   // function step10(pastX, tk,dk){
+    	
+		// x=AlgoritmNewton.newPoint(pastPont,tk,dk);
+		// writeOneArray("New point:",x );
+	//	return x;
+  //  }
+
+
+})(funt);
+
+
+    
